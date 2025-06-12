@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏦 Verificador de Extratos Bancários</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-university"></i> Verificador de Extratos Bancários</h1>
+            <p class="subtitle">Compare valores do PDF com movimentos dos extratos CSV</p>
+        </header>
+
+        <main>
+            <!-- Seção de Upload de Ficheiros -->
+            <section class="upload-section">
+                <h2><i class="fas fa-upload"></i> Selecionar Ficheiros</h2>
+                
+                <div class="file-input-group">
+                    <label for="csv1">
+                        <i class="fas fa-file-csv"></i> Extrato CSV 1:
+                    </label>
+                    <input type="file" id="csv1" accept=".csv" />
+                    <span class="file-status" id="csv1-status">Nenhum ficheiro selecionado</span>
+                </div>
+
+                <div class="file-input-group">
+                    <label for="csv2">
+                        <i class="fas fa-file-csv"></i> Extrato CSV 2:
+                    </label>
+                    <input type="file" id="csv2" accept=".csv" />
+                    <span class="file-status" id="csv2-status">Nenhum ficheiro selecionado</span>
+                </div>
+
+                <div class="file-input-group">
+                    <label for="pdf">
+                        <i class="fas fa-file-pdf"></i> Folha de Cofre PDF (opcional):
+                    </label>
+                    <input type="file" id="pdf" accept=".pdf" />
+                    <span class="file-status" id="pdf-status">Nenhum ficheiro selecionado</span>
+                </div>
+            </section>
+
+            <!-- Seção de Valores do PDF -->
+            <section class="pdf-values-section">
+                <h2><i class="fas fa-euro-sign"></i> Valores do PDF</h2>
+                <p class="instruction">
+                    Se o PDF é digitalizado ou não foi selecionado, insira os valores manualmente:
+                </p>
+                <textarea 
+                    id="pdf-values" 
+                    placeholder="Insira os valores separados por vírgula ou nova linha:&#10;Exemplo: 123.45, 67.89, 100.00&#10;Ou:&#10;123.45&#10;67.89&#10;100.00"
+                ></textarea>
+                <div class="pdf-values-info">
+                    <small><i class="fas fa-info-circle"></i> Formatos aceites: 123,45€ | 123.45 EUR | €123,45 | 123.45</small>
+                </div>
+            </section>
+
+            <!-- Botões de Ação -->
+            <section class="actions">
+                <button id="process-btn" class="btn btn-primary">
+                    <i class="fas fa-cogs"></i> Processar Ficheiros
+                </button>
+                <button id="compare-btn" class="btn btn-secondary" disabled>
+                    <i class="fas fa-balance-scale"></i> Comparar Valores
+                </button>
+                <button id="export-btn" class="btn btn-success" disabled>
+                    <i class="fas fa-download"></i> Exportar Relatório
+                </button>
+                <button id="clear-btn" class="btn btn-warning">
+                    <i class="fas fa-trash"></i> Limpar Tudo
+                </button>
+            </section>
+
+            <!-- Área de Resultados -->
+            <section class="results-section">
+                <h2><i class="fas fa-chart-bar"></i> Resultados</h2>
+                <div id="results" class="results-container">
+                    <div class="welcome-message">
+                        <h3>👋 Bem-vindo ao Verificador de Extratos!</h3>
+                        <ol>
+                            <li>Selecione os 2 ficheiros CSV dos extratos</li>
+                            <li>Opcionalmente, selecione o PDF ou insira valores manualmente</li>
+                            <li>Clique em "Processar Ficheiros"</li>
+                            <li>Depois clique em "Comparar Valores"</li>
+                            <li>Exporte o relatório final</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Estatísticas Rápidas -->
+            <section class="stats-section" id="stats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-movements">0</div>
+                    <div class="stat-label">Movimentos Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pdf-values-count">0</div>
+                    <div class="stat-label">Valores PDF</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="matches-count">0</div>
+                    <div class="stat-label">Correspondências</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="no-matches-count">0</div>
+                    <div class="stat-label">Não Encontrados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="match-rate">0%</div>
+                    <div class="stat-label">Taxa Correspondência</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>
+                <i class="fas fa-shield-alt"></i> 
+                Todos os dados são processados localmente no seu browser. 
+                Nenhuma informação é enviada para servidores externos.
+            </p>
+            <p>
+                <i class="fas fa-code"></i> 
+                Aplicação Web | 
+                <i class="fas fa-github"></i> 
+                Pronta para GitHub Pages
+            </p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processando ficheiros...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
