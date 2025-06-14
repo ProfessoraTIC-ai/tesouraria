@@ -36,25 +36,25 @@
                 </div>
 
                 <div class="file-input-group">
-                    <label for="pdf">
-                        <i class="fas fa-file-pdf"></i> Folha de Cofre PDF (opcional):
+                    <label for="excel">
+                        <i class="fas fa-file-excel"></i> Folha de Cofre Excel (.xlsx/.xls):
                     </label>
-                    <input type="file" id="pdf" accept=".pdf" />
-                    <span class="file-status" id="pdf-status">Nenhum ficheiro selecionado</span>
+                    <input type="file" id="excel" accept=".xlsx,.xls" />
+                    <span class="file-status" id="excel-status">Nenhum ficheiro selecionado</span>
                 </div>
             </section>
 
-            <!-- Seção de Valores do PDF -->
-            <section class="pdf-values-section">
-                <h2><i class="fas fa-euro-sign"></i> Valores do PDF</h2>
+            <!-- Seção de Valores do Excel (ou entrada manual) -->
+            <section class="excel-values-section">
+                <h2><i class="fas fa-euro-sign"></i> Valores da Folha de Cofre</h2>
                 <p class="instruction">
-                    Se o PDF é digitalizado ou não foi selecionado, insira os valores manualmente:
+                    Os valores serão extraídos automaticamente do Excel, ou insira manualmente se necessário:
                 </p>
                 <textarea 
-                    id="pdf-values" 
-                    placeholder="Insira os valores separados por vírgula ou nova linha:&#10;Exemplo: 123.45, 67.89, 100.00&#10;Ou:&#10;123.45&#10;67.89&#10;100.00"
+                    id="excel-values" 
+                    placeholder="Valores serão carregados automaticamente do Excel...&#10;&#10;Ou insira manualmente:&#10;Exemplo: 123.45, 67.89, 100.00&#10;Ou:&#10;123.45&#10;67.89&#10;100.00"
                 ></textarea>
-                <div class="pdf-values-info">
+                <div class="excel-values-info">
                     <small><i class="fas fa-info-circle"></i> Formatos aceites: 123,45€ | 123.45 EUR | €123,45 | 123.45</small>
                 </div>
             </section>
@@ -83,7 +83,7 @@
                         <h3>👋 Bem-vindo ao Verificador de Extratos!</h3>
                         <ol>
                             <li>Selecione os 2 ficheiros CSV dos extratos</li>
-                            <li>Opcionalmente, selecione o PDF ou insira valores manualmente</li>
+                            <li>Selecione o ficheiro Excel da folha de cofre</li>
                             <li>Clique em "Processar Ficheiros"</li>
                             <li>Depois clique em "Comparar Valores"</li>
                             <li>Exporte o relatório final</li>
@@ -100,7 +100,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="pdf-values-count">0</div>
-                    <div class="stat-label">Valores PDF</div>
+                    <div class="stat-label">Valores Excel</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="matches-count">0</div>
@@ -140,6 +140,8 @@
         </div>
     </div>
 
+    <!-- SheetJS for Excel file reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
