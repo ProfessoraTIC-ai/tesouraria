@@ -123,8 +123,8 @@ input[type="file"]:focus {
     font-weight: 600;
 }
 
-/* Valores PDF */
-#pdf-values {
+/* Valores Excel */
+#excel-values {
     width: 100%;
     min-height: 120px;
     padding: 15px;
@@ -137,7 +137,7 @@ input[type="file"]:focus {
     transition: border-color 0.3s ease;
 }
 
-#pdf-values:focus {
+#excel-values:focus {
     outline: none;
     border-color: #3498db;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
@@ -148,11 +148,11 @@ input[type="file"]:focus {
     color: #5d6d7e;
 }
 
-.pdf-values-info {
+.excel-values-info {
     margin-top: 8px;
 }
 
-.pdf-values-info small {
+.excel-values-info small {
     color: #7f8c8d;
 }
 
