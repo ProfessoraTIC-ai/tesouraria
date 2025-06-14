@@ -2,7 +2,7 @@
 class VerificadorExtratos {
     constructor() {
         this.csvData = [];
-        this.pdfValues = [];
+        this.excelValues = [];
         this.comparisonResults = null;
         
         this.initializeEventListeners();
@@ -13,7 +13,7 @@ class VerificadorExtratos {
         // File inputs
         document.getElementById('csv1').addEventListener('change', (e) => this.handleFileSelect(e, 'csv1-status'));
         document.getElementById('csv2').addEventListener('change', (e) => this.handleFileSelect(e, 'csv2-status'));
-        document.getElementById('pdf').addEventListener('change', (e) => this.handleFileSelect(e, 'pdf-status'));
+        document.getElementById('excel').addEventListener('change', (e) => this.handleExcelSelect(e, 'excel-status'));
 
         // Buttons
         document.getElementById('process-btn').addEventListener('click', () => this.processFiles());
@@ -35,12 +35,92 @@ class VerificadorExtratos {
         }
     }
 
+    async handleExcelSelect(event, statusId) {
+        const file = event.target.files[0];
+        const statusElement = document.getElementById(statusId);
+        
+        if (file) {
+            statusElement.textContent = `✅ ${file.name} (${this.formatFileSize(file.size)})`;
+            statusElement.classList.add('selected');
+            
+            // Processar Excel automaticamente
+            try {
+                this.showMessage('📊 Processando ficheiro Excel...', 'info');
+                const values = await this.processExcelFile(file);
+                
+                if (values.length > 0) {
+                    // Colocar valores na textarea
+                    const textarea = document.getElementById('excel-values');
+                    textarea.value = values.map(v => v.toFixed(2)).join(', ');
+                    
+                    this.showMessage(`✅ Excel processado: ${values.length} valores encontrados`, 'success');
+                    this.showMessage(`💰 Valores: ${values.slice(0, 5).map(v => v.toFixed(2) + '€').join(', ')}${values.length > 5 ? '...' : ''}`, 'info');
+                } else {
+                    this.showMessage('⚠️ Nenhum valor numérico encontrado no Excel', 'warning');
+                    this.showMessage('💡 Insira valores manualmente na caixa de texto', 'info');
+                }
+            } catch (error) {
+                this.showMessage(`❌ Erro ao processar Excel: ${error.message}`, 'error');
+                this.showMessage('💡 Insira valores manualmente na caixa de texto', 'info');
+            }
+        } else {
+            statusElement.textContent = 'Nenhum ficheiro selecionado';
+            statusElement.classList.remove('selected');
+        }
+    }
+
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    async processExcelFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Usar a primeira folha
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Converter para JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // Extrair todos os valores numéricos
+                    const values = [];
+                    
+                    for (const row of jsonData) {
+                        for (const cell of row) {
+                            if (cell !== null && cell !== undefined) {
+                                // Tentar converter para número
+                                const numValue = this.parseMonetaryValue(cell.toString());
+                                if (numValue !== null && numValue > 0) {
+                                    values.push(Math.abs(numValue));
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Remover duplicatas e ordenar
+                    const uniqueValues = [...new Set(values)].sort((a, b) => b - a);
+                    
+                    resolve(uniqueValues);
+                    
+                } catch (error) {
+                    reject(new Error(`Erro ao processar Excel: ${error.message}`));
+                }
+            };
+            
+            reader.onerror = () => reject(new Error('Erro ao ler ficheiro Excel'));
+            reader.readAsArrayBuffer(file);
+        });
     }
 
     showLoading(show = true) {
@@ -109,19 +189,28 @@ class VerificadorExtratos {
                 }
             }
 
-            // Processar PDF se existe
-            const pdfFile = document.getElementById('pdf').files[0];
-            if (pdfFile) {
+            // Verificar se Excel foi processado
+            const excelFile = document.getElementById('excel').files[0];
+            const excelValues = document.getElementById('excel-values').value.trim();
+            
+            if (excelFile) {
                 this.showMessage('', 'info');
-                this.showMessage('📄 Processando PDF...', 'info');
-                // Note: PDF processing would require additional libraries
-                this.showMessage('⚠️ PDF selecionado mas processamento automático não disponível', 'warning');
-                this.showMessage('💡 Use a caixa de texto abaixo para inserir valores manualmente', 'info');
+                this.showMessage('📊 Excel selecionado e processado automaticamente', 'success');
+                if (excelValues) {
+                    const valueCount = excelValues.split(',').length;
+                    this.showMessage(`💰 ${valueCount} valores extraídos do Excel`, 'info');
+                } else {
+                    this.showMessage('💡 Se necessário, insira valores manualmente na caixa de texto', 'info');
+                }
+            } else {
+                this.showMessage('', 'info');
+                this.showMessage('📊 Nenhum Excel selecionado', 'warning');
+                this.showMessage('💡 Selecione um ficheiro Excel ou insira valores manualmente', 'info');
             }
 
             this.showMessage('', 'info');
             this.showMessage('✅ Processamento concluído!', 'success');
-            this.showMessage('➡️ Próximo passo: Insira valores do PDF e clique "Comparar Valores"', 'info');
+            this.showMessage('➡️ Próximo passo: Verifique valores do Excel e clique "Comparar Valores"', 'info');
 
             // Ativar botão de comparação
             document.getElementById('compare-btn').disabled = false;
@@ -230,39 +319,39 @@ class VerificadorExtratos {
                 throw new Error('Processe primeiro os ficheiros CSV');
             }
 
-            // Obter valores do PDF
-            const pdfText = document.getElementById('pdf-values').value.trim();
-            if (!pdfText) {
-                throw new Error('Insira valores do PDF na caixa de texto');
+            // Obter valores do Excel
+            const excelText = document.getElementById('excel-values').value.trim();
+            if (!excelText) {
+                throw new Error('Insira valores da folha de cofre na caixa de texto');
             }
 
             this.showMessage('', 'info');
             this.showMessage('🔍 INICIANDO COMPARAÇÃO...', 'header');
 
-            // Processar valores do PDF
-            this.pdfValues = this.parsePDFValues(pdfText);
-            this.showMessage(`📋 Valores do PDF processados: ${this.pdfValues.length}`, 'info');
+            // Processar valores do Excel
+            this.excelValues = this.parseExcelValues(excelText);
+            this.showMessage(`📋 Valores da folha de cofre processados: ${this.excelValues.length}`, 'info');
 
-            // Mostrar valores do PDF
-            for (let i = 0; i < Math.min(10, this.pdfValues.length); i++) {
-                const val = this.pdfValues[i];
+            // Mostrar valores do Excel
+            for (let i = 0; i < Math.min(10, this.excelValues.length); i++) {
+                const val = this.excelValues[i];
                 this.showMessage(`   ${i+1}. ${val.valor.toFixed(2)}€ ('${val.original}')`, 'info');
             }
-            if (this.pdfValues.length > 10) {
-                this.showMessage(`   ... e mais ${this.pdfValues.length - 10} valores`, 'info');
+            if (this.excelValues.length > 10) {
+                this.showMessage(`   ... e mais ${this.excelValues.length - 10} valores`, 'info');
             }
 
             // Realizar comparação
             const found = [];
             const notFound = [];
 
-            for (const pdfVal of this.pdfValues) {
+            for (const excelVal of this.excelValues) {
                 let foundMatch = false;
 
                 for (const movement of this.csvData) {
-                    if (Math.abs(Math.abs(pdfVal.valor) - Math.abs(movement.valor)) < 0.01) {
+                    if (Math.abs(Math.abs(excelVal.valor) - Math.abs(movement.valor)) < 0.01) {
                         found.push({
-                            pdfValue: pdfVal,
+                            excelValue: excelVal,
                             movement: movement
                         });
                         foundMatch = true;
@@ -271,13 +360,13 @@ class VerificadorExtratos {
                 }
 
                 if (!foundMatch) {
-                    notFound.push(pdfVal);
+                    notFound.push(excelVal);
                 }
             }
 
             // Guardar resultados
             this.comparisonResults = {
-                pdfValues: this.pdfValues,
+                excelValues: this.excelValues,
                 found: found,
                 notFound: notFound,
                 csvData: this.csvData
@@ -289,7 +378,7 @@ class VerificadorExtratos {
             this.showMessage(`   ✅ Valores encontrados: ${found.length}`, 'success');
             this.showMessage(`   ❌ Valores NÃO encontrados: ${notFound.length}`, 'error');
             
-            const matchRate = this.pdfValues.length > 0 ? (found.length / this.pdfValues.length * 100).toFixed(1) : 0;
+            const matchRate = this.excelValues.length > 0 ? (found.length / this.excelValues.length * 100).toFixed(1) : 0;
             this.showMessage(`   📈 Taxa de correspondência: ${matchRate}%`, 'info');
 
             // Mostrar valores não encontrados
@@ -306,9 +395,9 @@ class VerificadorExtratos {
                 this.showMessage('', 'info');
                 this.showMessage('✅ CORRESPONDÊNCIAS ENCONTRADAS:', 'header');
                 found.slice(0, 10).forEach((match, i) => {
-                    const pdfVal = match.pdfValue;
+                    const excelVal = match.excelValue;
                     const mov = match.movement;
-                    this.showMessage(`   ${i+1}. ${pdfVal.valor.toFixed(2)}€ → ${mov.data} - ${mov.descricao.substring(0, 40)}...`, 'success');
+                    this.showMessage(`   ${i+1}. ${excelVal.valor.toFixed(2)}€ → ${mov.data} - ${mov.descricao.substring(0, 40)}...`, 'success');
                 });
                 if (found.length > 10) {
                     this.showMessage(`   ... e mais ${found.length - 10} correspondências`, 'success');
@@ -330,7 +419,7 @@ class VerificadorExtratos {
         }
     }
 
-    parsePDFValues(text) {
+    parseExcelValues(text) {
         const values = [];
         const lines = text.split('\n');
 
@@ -361,12 +450,12 @@ class VerificadorExtratos {
 
     updateStatsWithComparison() {
         if (this.comparisonResults) {
-            document.getElementById('pdf-values-count').textContent = this.comparisonResults.pdfValues.length;
+            document.getElementById('pdf-values-count').textContent = this.comparisonResults.excelValues.length;
             document.getElementById('matches-count').textContent = this.comparisonResults.found.length;
             document.getElementById('no-matches-count').textContent = this.comparisonResults.notFound.length;
             
-            const rate = this.comparisonResults.pdfValues.length > 0 ? 
-                (this.comparisonResults.found.length / this.comparisonResults.pdfValues.length * 100).toFixed(1) : 0;
+            const rate = this.comparisonResults.excelValues.length > 0 ? 
+                (this.comparisonResults.found.length / this.comparisonResults.excelValues.length * 100).toFixed(1) : 0;
             document.getElementById('match-rate').textContent = rate + '%';
         }
     }
@@ -390,11 +479,11 @@ class VerificadorExtratos {
             // Resumo
             reportContent += 'RESUMO:\n';
             reportContent += '-'.repeat(20) + '\n';
-            reportContent += `Total valores PDF: ${this.comparisonResults.pdfValues.length}\n`;
+            reportContent += `Total valores folha de cofre: ${this.comparisonResults.excelValues.length}\n`;
             reportContent += `Encontrados: ${this.comparisonResults.found.length}\n`;
             reportContent += `Não encontrados: ${this.comparisonResults.notFound.length}\n`;
-            const rate = this.comparisonResults.pdfValues.length > 0 ? 
-                (this.comparisonResults.found.length / this.comparisonResults.pdfValues.length * 100).toFixed(1) : 0;
+            const rate = this.comparisonResults.excelValues.length > 0 ? 
+                (this.comparisonResults.found.length / this.comparisonResults.excelValues.length * 100).toFixed(1) : 0;
             reportContent += `Taxa correspondência: ${rate}%\n\n`;
 
             // Valores não encontrados
@@ -412,9 +501,9 @@ class VerificadorExtratos {
                 reportContent += 'CORRESPONDÊNCIAS ENCONTRADAS:\n';
                 reportContent += '-'.repeat(35) + '\n';
                 this.comparisonResults.found.forEach((match, i) => {
-                    const pdfVal = match.pdfValue;
+                    const excelVal = match.excelValue;
                     const mov = match.movement;
-                    reportContent += `${i+1}. ${pdfVal.valor.toFixed(2)}€ → ${mov.data} - ${mov.descricao}\n`;
+                    reportContent += `${i+1}. ${excelVal.valor.toFixed(2)}€ → ${mov.data} - ${mov.descricao}\n`;
                 });
                 reportContent += '\n';
             }
@@ -452,23 +541,23 @@ class VerificadorExtratos {
         // Limpar ficheiros
         document.getElementById('csv1').value = '';
         document.getElementById('csv2').value = '';
-        document.getElementById('pdf').value = '';
+        document.getElementById('excel').value = '';
 
         // Limpar status
         document.getElementById('csv1-status').textContent = 'Nenhum ficheiro selecionado';
         document.getElementById('csv2-status').textContent = 'Nenhum ficheiro selecionado';
-        document.getElementById('pdf-status').textContent = 'Nenhum ficheiro selecionado';
+        document.getElementById('excel-status').textContent = 'Nenhum ficheiro selecionado';
 
         document.getElementById('csv1-status').classList.remove('selected');
         document.getElementById('csv2-status').classList.remove('selected');
-        document.getElementById('pdf-status').classList.remove('selected');
+        document.getElementById('excel-status').classList.remove('selected');
 
-        // Limpar valores PDF
-        document.getElementById('pdf-values').value = '';
+        // Limpar valores Excel
+        document.getElementById('excel-values').value = '';
 
         // Limpar dados
         this.csvData = [];
-        this.pdfValues = [];
+        this.excelValues = [];
         this.comparisonResults = null;
 
         // Desativar botões
